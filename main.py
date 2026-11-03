@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for, redirect, flash, send_from_directory
+from flask import Flask, render_template, request, url_for, redirect, flash, send_from_directory,session
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -6,11 +6,17 @@ from sqlalchemy import Integer, String
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret-key-goes-here'
+app.config['SECRET_KEY'] = 'njdskgvhdx,csbdxhchcvdhcx'
 
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+# Load a user from the database by their ID
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 
 # CREATE DATABASE
 class Base(DeclarativeBase):
@@ -28,6 +34,10 @@ class User(UserMixin,db.Model):
  
 with app.app_context():
     db.create_all()
+
+
+
+
 
 
 @app.route('/')
@@ -51,12 +61,20 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        return redirect(url_for('secrets'))
+        return redirect(url_for('login'))
     return render_template("register.html")
 
 
-@app.route('/login')
+@app.route('/login', methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        user = db.session.execute(db.select(User).filter_by(email=email)).scalar()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            return redirect(url_for('secrets'))
     return render_template("login.html")
 
 
@@ -67,7 +85,9 @@ def secrets():
 
 @app.route('/logout')
 def logout():
-    pass
+    load_user(current_user.get_id())
+    logout_user()
+    return redirect(url_for('login'))
 
 
 @app.route('/download', methods=["GET"])
