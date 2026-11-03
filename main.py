@@ -72,9 +72,12 @@ def login():
         password = request.form.get("password")
 
         user = db.session.execute(db.select(User).filter_by(email=email)).scalar()
-        if user and check_password_hash(user.password, password):
+        if user and user.email == email and check_password_hash(user.password, password):
             login_user(user)
             return redirect(url_for('secrets'))
+        else:
+            flash("Invalid email or password. Please try again.", "error")
+        
     return render_template("login.html")
 
 
