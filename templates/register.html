@@ -1,7 +1,11 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} {% block content %} {% with messages =
+get_flashed_messages(with_categories=true) %}
 
 <div class="box">
   <h1>Register</h1>
+  {% for category, message in messages %} {% if category == "error" %}
+  <p class="error-message">{{ message }}</p>
+  {% endif %} {% endfor %}
   <form action="{{ url_for('register') }}" method="post">
     <input type="text" name="name" placeholder="Name" required="required" />
     <input type="email" name="email" placeholder="Email" required="required" />
@@ -16,5 +20,4 @@
     </button>
   </form>
 </div>
-
-{% endblock %}
+{% endwith %} {% endblock %}

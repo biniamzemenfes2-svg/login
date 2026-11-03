@@ -45,6 +45,7 @@ def home():
     return render_template("index.html")
 
 
+
 @app.route('/register', methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -52,17 +53,37 @@ def register():
         password = request.form.get("password")
         name = request.form.get("name")
 
-        #generate a hashed password
-        pwhashed = generate_password_hash(password=password, method='pbkdf2:sha256', salt_length=16)
+        # Check whether the email already exists
+        user = db.session.execute(
+            db.select(User).filter_by(email=email)
+        ).scalars().first()
 
+        if user:
+            flash("This email is already registered.", "error")
+            return redirect(url_for('register'))
 
-        # Create new user and add to database
-        new_user = User(email=email, password=pwhashed, name=name)
+        # Generate a hashed password
+        pwhashed = generate_password_hash(
+            password=password,
+            method='pbkdf2:sha256',
+            salt_length=16
+        )
+
+        # Create and save the new user
+        new_user = User(
+            email=email,
+            password=pwhashed,
+            name=name
+        )
+
         db.session.add(new_user)
         db.session.commit()
 
+        flash("Registration successful! Please log in.", "success")
         return redirect(url_for('login'))
+
     return render_template("register.html")
+
 
 
 @app.route('/login', methods=["GET", "POST"])
